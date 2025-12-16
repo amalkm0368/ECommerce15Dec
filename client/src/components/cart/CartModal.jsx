@@ -3,6 +3,11 @@ import { useDispatch, useSelector } from "react-redux"
 import toast from "react-hot-toast"
 import Swal from "sweetalert2"
 import { placeOrder } from "../../redux/reducer/orderSlice"
+import { loadStripe } from "@stripe/stripe-js"
+import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js"
+import apiAxios from "../../utils/axiosConfig"
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
 
 const CartModal = ({ open, onClose, items, onOrderOpen }) => {
   const dispatch = useDispatch()
@@ -18,6 +23,17 @@ const CartModal = ({ open, onClose, items, onOrderOpen }) => {
     state: "",
     zip: "",
   })
+  const [clientSecret, setClientSecret] = useState("")
+
+  const createPaymentIntent = async () => {
+    try {
+      const response = await apiAxios.post('/payment/create-payment-intent', { amount: totalAmount })
+      setClientSecret(response.data.clientSecret)
+    } catch (error) {
+      console.error(error)
+      toast.error("Failed to initialize payment")
+    }
+  }
 
   useEffect(() => {
     if (step === 2 && user) {
@@ -104,7 +120,7 @@ const CartModal = ({ open, onClose, items, onOrderOpen }) => {
         {/* Step Indicators */}
         <div className="mb-6">
           <div className="flex items-center justify-center space-x-3">
-            {[1, 2, 3].map((num) => (
+            {[1, 2, 3, 4].map((num) => (
               <React.Fragment key={num}>
                 <div
                   onClick={() => setStep(num)}
@@ -133,7 +149,8 @@ const CartModal = ({ open, onClose, items, onOrderOpen }) => {
           <h2 className="text-xl font-bold text-center mt-3">
             {step === 1 && "🛒 Review Cart"}
             {step === 2 && "📍 Shipping Address"}
-            {step === 3 && "✅ Confirm Order"}
+            {step === 3 && "💳 Payment Method"}
+            {step === 4 && "✅ Confirm Order"}
           </h2>
         </div>
 
@@ -254,8 +271,37 @@ const CartModal = ({ open, onClose, items, onOrderOpen }) => {
           </div>
         )}
 
-        {/* Step 3: Confirm Order */}
+        {/* Step 3: Payment Method */}
         {step === 3 && (
+          <div className="space-y-4">
+            <div className="p-4 border border-gray-200 rounded-xl shadow-md bg-white">
+              <h3 className="text-lg font-semibold mb-4">Payment Information</h3>
+              <p className="text-gray-600 mb-4">Secure payment processing with Stripe.</p>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="Card Number"
+                  className="w-full border border-gray-300 p-3 rounded-lg shadow-sm focus:border-[#c8cc00] focus:ring-2 focus:ring-[#c8cc00] outline-none"
+                />
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    placeholder="MM/YY"
+                    className="flex-1 border border-gray-300 p-3 rounded-lg shadow-sm focus:border-[#c8cc00] focus:ring-2 focus:ring-[#c8cc00] outline-none"
+                  />
+                  <input
+                    type="text"
+                    placeholder="CVV"
+                    className="flex-1 border border-gray-300 p-3 rounded-lg shadow-sm focus:border-[#c8cc00] focus:ring-2 focus:ring-[#c8cc00] outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Step 4: Confirm Order */}
+        {step === 4 && (
           <div className="space-y-4">
             <div className="p-4 border border-gray-200 rounded-xl shadow-md bg-white">
               {/* Cart Items */}
@@ -327,9 +373,9 @@ const CartModal = ({ open, onClose, items, onOrderOpen }) => {
             {step > 1 ? "Back" : "Cancel"}
           </button>
 
-          {step < 3 ? (
+          {step < 4 ? (
             <button
-              onClick={() => setStep(step + 1)}
+              onClick={async () => { if (step === 2) await createPaymentIntent(); setStep(step + 1) }}
               className="px-5 py-2 bg-[#c8cc00] rounded-lg hover:brightness-110 transition-all font-semibold"
             >
               Next

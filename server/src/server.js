@@ -16,6 +16,7 @@ import orderRoutes from "./routes/order.route.js"
 import categoryRoutes from "./routes/category.route.js"
 import cartRoutes from "./routes/cart.route.js"
 import wishlistRoutes from "./routes/wishlist.route.js"
+import paymentRoutes from "./routes/payment.route.js"
 
 app.use("/api/auth", authRoutes)
 app.use("/api/products", productRoutes)
@@ -23,6 +24,7 @@ app.use("/api/cart", cartRoutes)
 app.use("/api/wishlist", wishlistRoutes)
 app.use("/api/category", categoryRoutes)
 app.use("/api/orders", orderRoutes)
+app.use("/api/payment", paymentRoutes)
 console.log(process.env.PORT)
 const PORT = process.env.PORT || 5000
 app.listen(PORT, () => {
